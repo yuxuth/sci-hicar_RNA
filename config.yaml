@@ -1,0 +1,21 @@
+
+## the index folder for STAR, change to mm9 if it is mouse
+STARINDEX: "//home/gb148/almanlab/genome_ref/hg19_hista2/grch37_tran/genome_tran"
+## gtf file for annotation
+
+MYGTF: "/home/gb148/almanlab/genome_ref/hg19_hista2/grch37_tran/Homo_sapiens.GRCh37.75.gtf"
+## hisat location
+hisat: "hisat2"
+stringtie : "stringtie"
+# splicesite_index : "/work/06032/tg853315/stampede2/genome_index/hisat2_human/grch38_tran/Homo_sapiens.GRCh38.95.splice_site.txt"
+
+# bbbuk: '/work/06032/tg853315/stampede2/software/bbmap/bbduk.sh'
+# adaptors: '/work/06032/tg853315/stampede2/software/bbmap/resources/adapters.fa'
+## use which program to count 
+
+NGmerge: 'NGmerge'
+
+# Path to a JSON file with samples and their corresponding FASTQ files.
+SAMPLES_JSON: './samples.json'
+
+#CLUSTER_JSON: './cluster.json'
