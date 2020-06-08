@@ -17,16 +17,18 @@ NGmerge = config['NGmerge'] ## remove the adaptor by the overlap , if the adapto
 # splicesite_index = config['splicesite_index']
 
 ## constructe the target if the inputs are fastqs
-ALL_TRIMMED_FASTQ_1 = expand("01_trim_seq/{sample}_1.fastq", sample = SAMPLES)
-ALL_TRIMMED_FASTQ_2 = expand("01_trim_seq/{sample}_2.fastq", sample = SAMPLES)
+ALL_TRIMMED_FASTQ_1 = expand("01_trim_seq/{sample}_1.fastq.gz", sample = SAMPLES)
+ALL_TRIMMED_FASTQ_2 = expand("01_trim_seq/{sample}_2.fastq.gz", sample = SAMPLES)
 ALL_FASTQC  = expand("02_fqc/{sample}_1_fastqc.zip", sample = SAMPLES)
 ALL_BAM = expand("03_bam/{sample}_Aligned.out.sam", sample = SAMPLES)
 ALL_SORTED_BAM = expand("04_sortBam/{sample}.sorted.bam", sample = SAMPLES)
 ALL_bw = expand("06_bigwig/{sample}.bw", sample = SAMPLES)
 ALL_QC = ["07_multiQC/multiQC_log.html"]
-TARGETS.extend(ALL_TRIMMED_FASTQ_1) 
-TARGETS.extend(ALL_TRIMMED_FASTQ_2) 
-TARGETS.extend(ALL_BAM) ##append all list to 
+
+
+# TARGETS.extend(ALL_TRIMMED_FASTQ_1) 
+TARGETS.extend(ALL_bw) 
+TARGETS.extend(ALL_QC) ##append all list to 
 #TARGETS.extend(ALL_SORTED_BAM)
 #TARGETS.extend(ALL_stringtie_gtf)
 #TARGETS.extend(ALL_FASTQC) ## check later
