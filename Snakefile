@@ -45,7 +45,7 @@ rule all:
 	input: TARGETS
 
 
-rule trim_fastqs: ## merge fastq
+rule trim_fastqs: ## 
 	input:
 		r1 = lambda wildcards: FILES[wildcards.sample]['R1'],
 		r2 = lambda wildcards: FILES[wildcards.sample]['R2']
@@ -54,12 +54,17 @@ rule trim_fastqs: ## merge fastq
 	log: "00_log/{sample}_trim_adapter.log"
 	params:
 		jobname = "{sample}"
-	threads : 8
+	threads : 18
 	# group: "mygroup"
 	message: "trim fastqs {input}: {threads} threads"
 	shell:
 		"""
-		NGmerge  -a -z  -n {threads} -1 {input[0]} -2 {input[1]}  -o 01_trim_seq/{params.jobname} 2> {log} 
+		cutadapt -j {threads}  -m 30  -n 6 -O 8 \
+         -a "A{20}" -A "A{20}"   -g "T{20}" -G "T{20}" \
+         -a CTGTCTCTTA -A CTGTCTCTTA  \
+          -g AGTACATGGG  -a CCCATGTACT  \
+          -G  AGTACATGGG -A CCCATGTACT  \
+           -o {output[0]} -p {output[1]}  {input[r1]} {input[r2]}  2> {log} 
 		"""
 
 rule fastqc:
@@ -85,7 +90,7 @@ rule hisat_mapping:
 	log: "00_log/{sample}_hisat_align"
 	params: 
 		jobname = "{sample}"
-	threads: 12
+	threads: 18
 	# group: "mygroup"
 	message: "aligning {input} using hisat: {threads} threads"
 	shell:
