@@ -60,13 +60,13 @@ rule trim_fastqs:
 	shell:
 		"""
 		cutadapt -j {threads}  -m 30  -n 6 -O 8 \
-         -a "A{20}" -A "A{20}"   -g "T{20}" -G "T{20}" \
+
          -a CTGTCTCTTA -A CTGTCTCTTA  \
           -g AGTACATGGG  -a CCCATGTACT  \
           -G  AGTACATGGG -A CCCATGTACT  \
            -o {output[0]} -p {output[1]}  {input[0]} {input[1]}  2> {log} 
 		"""
-
+#          -a "A{20}" -A "A{20}"   -g "T{20}" -G "T{20}" \ 
 rule fastqc:
 	input:  "01_trim_seq/{sample}_1.fastq.gz" , "01_trim_seq/{sample}_2.fastq.gz"
 	output: "02_fqc/{sample}_1_fastqc.zip" 
