@@ -45,7 +45,7 @@ rule all:
 	input: TARGETS
 
 
-rule trim_fastqs: ## 
+rule trim_fastqs: 
 	input:
 		r1 = lambda wildcards: FILES[wildcards.sample]['R1'],
 		r2 = lambda wildcards: FILES[wildcards.sample]['R2']
@@ -64,7 +64,7 @@ rule trim_fastqs: ##
          -a CTGTCTCTTA -A CTGTCTCTTA  \
           -g AGTACATGGG  -a CCCATGTACT  \
           -G  AGTACATGGG -A CCCATGTACT  \
-           -o {output[0]} -p {output[1]}  {input[r1]} {input[r2]}  2> {log} 
+           -o {output[0]} -p {output[1]}  {input[0]} {input[1]}  2> {log} 
 		"""
 
 rule fastqc:
