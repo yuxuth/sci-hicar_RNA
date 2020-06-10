@@ -23,12 +23,12 @@ ALL_FASTQC  = expand("02_fqc/{sample}_1_fastqc.zip", sample = SAMPLES)
 ALL_BAM = expand("03_bam/{sample}_Aligned.out.sam", sample = SAMPLES)
 ALL_SORTED_BAM = expand("04_sortBam/{sample}.sorted.bam", sample = SAMPLES)
 ALL_bw = expand("06_bigwig/{sample}.bw", sample = SAMPLES)
-ALL_QC = ["07_multiQC/multiQC_log.html"]
+# ALL_QC = ["07_multiQC/multiQC_log.html"]
 
 
 # TARGETS.extend(ALL_TRIMMED_FASTQ_1) 
 TARGETS.extend(ALL_bw) 
-TARGETS.extend(ALL_QC) ##append all list to 
+# TARGETS.extend(ALL_QC) ##append all list to 
 #TARGETS.extend(ALL_SORTED_BAM)
 #TARGETS.extend(ALL_stringtie_gtf)
 #TARGETS.extend(ALL_FASTQC) ## check later
