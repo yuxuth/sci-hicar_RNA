@@ -12,8 +12,8 @@ SAMPLES = sorted(FILES.keys())
 
 STARINDEX = config['STARINDEX']
 hisat = config["hisat"]
+gtf = config['MYGTF']
 TARGETS = []
-NGmerge = config['NGmerge'] ## remove the adaptor by the overlap , if the adaptor contaimination happen, use the cutadaptor
 # splicesite_index = config['splicesite_index']
 
 ## constructe the target if the inputs are fastqs
@@ -23,6 +23,7 @@ ALL_FASTQC  = expand("02_fqc/{sample}_1_fastqc.zip", sample = SAMPLES)
 ALL_BAM = expand("03_bam/{sample}_Aligned.out.sam", sample = SAMPLES)
 ALL_SORTED_BAM = expand("04_sortBam/{sample}.sorted.bam", sample = SAMPLES)
 ALL_bw = expand("06_bigwig/{sample}.bw", sample = SAMPLES)
+ALL_feature_count = expand( "07_featurecount/{sample}_featureCount.txt", sample = SAMPLES)
 # ALL_QC = ["07_multiQC/multiQC_log.html"]
 
 
@@ -157,6 +158,20 @@ rule make_bigwigs: ## included if need the coverage depth
 	# 		# no window smoothing is done, for paired-end, bamCoverage will extend the length to the fragement length of the paired reads
 	# bamCoverage -b {input[0]}  --skipNonCoveredRegions --normalizeUsing RPKM --samFlagExclude 16  -p {threads}  -o {output[0]} 2> {log}
 	# bamCoverage -b {input[0]}  --skipNonCoveredRegions --normalizeUsing RPKM --samFlagInclude 16  -p {threads}  -o {output[1]} 2>> {log}
+
+rule featureCount_fq:
+    input: "04_sortBam/{sample}.sorted.bam"
+    output: "07_featurecount/{sample}_featureCount.txt"
+    log: "00log/{sample}_featureCount.log"
+    params:
+        jobname = "{sample}"
+    threads: 12
+    message: "feature-count {input} : {threads} threads"
+    shell:
+        """
+        # -p for paried-end, counting fragments rather reads
+        featureCounts -T {threads} -p -t exon -g gene_id -a {gtf}  -M -o {output} {input} 2> {log}
+        """
 
 
 rule multiQC:

@@ -3,7 +3,7 @@
 STARINDEX: "/home/yx157/data/Index/grch38_tran/genome_tran"
 ## gtf file for annotation
 
-MYGTF: "/home/gb148/almanlab/genome_ref/hg19_hista2/grch37_tran/Homo_sapiens.GRCh37.75.gtf"
+MYGTF: "~/data/Index/grch38_tran/Homo_sapiens.GRCh38.84.gtf.gz"
 ## hisat location
 hisat: "hisat2"
 stringtie : "stringtie"
