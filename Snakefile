@@ -29,6 +29,7 @@ ALL_feature_count = expand( "07_featurecount/{sample}_featureCount.txt", sample 
 
 # TARGETS.extend(ALL_TRIMMED_FASTQ_1) 
 TARGETS.extend(ALL_bw) 
+TARGETS.extend(ALL_feature_count) 
 # TARGETS.extend(ALL_QC) ##append all list to 
 #TARGETS.extend(ALL_SORTED_BAM)
 #TARGETS.extend(ALL_stringtie_gtf)
