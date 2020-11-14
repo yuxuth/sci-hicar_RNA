@@ -2,12 +2,17 @@
     "__default__":
     {
         "job": "{rule}.{wildcards.sample}",
-        "mem": "12G",
+        "mem": "10G",
         "out": "cluster_log/{rule}.{wildcards.sample}.out",
         "err": "cluster_log/{rule}.{wildcards.sample}.err"
     },
-        "hisat_mapping":
+        "bwa_align":
     {
-        "mem": "20G"
+        "mem": "30G"
+    },
+    "flip_pairsam_sort":
+    {
+        "mem": "30G"
     }
+
 }

@@ -1,44 +1,24 @@
 shell.prefix("set -eo pipefail; echo BEGIN at $(date); ")
 shell.suffix("; exitstat=$?; echo END at $(date); echo exit status was $exitstat; exit $exitstat")
 
-configfile: "config.yaml"
+configfile: "config.yaml" 
 
 FILES = json.load(open(config['SAMPLES_JSON']))
-
-# CLUSTER = json.load(open(config['CLUSTER_JSON']))
-
+CLUSTER = json.load(open(config['CLUSTER_JSON']))
+white_list = config['white_list']
+kallisto_INDEX = config['kallisto_INDEX']
 SAMPLES = sorted(FILES.keys())
 
-
-STARINDEX = config['STARINDEX']
-hisat = config["hisat"]
-gtf = config['MYGTF']
 TARGETS = []
-# splicesite_index = config['splicesite_index']
 
 ## constructe the target if the inputs are fastqs
-ALL_TRIMMED_FASTQ_1 = expand("01_trim_seq/{sample}_1.fastq.gz", sample = SAMPLES)
-ALL_TRIMMED_FASTQ_2 = expand("01_trim_seq/{sample}_2.fastq.gz", sample = SAMPLES)
-ALL_FASTQC  = expand("02_fqc/{sample}_1_fastqc.zip", sample = SAMPLES)
-ALL_BAM = expand("03_bam/{sample}_Aligned.out.sam", sample = SAMPLES)
-ALL_SORTED_BAM = expand("04_sortBam/{sample}.sorted.bam", sample = SAMPLES)
-ALL_bw = expand("06_bigwig/{sample}.bw", sample = SAMPLES)
-ALL_feature_count = expand( "07_featurecount/{sample}_featureCount.txt", sample = SAMPLES)
+
 # ALL_QC = ["07_multiQC/multiQC_log.html"]
 
 
-# TARGETS.extend(ALL_TRIMMED_FASTQ_1) 
-TARGETS.extend(ALL_bw) 
-TARGETS.extend(ALL_feature_count) 
-# TARGETS.extend(ALL_QC) ##append all list to 
-#TARGETS.extend(ALL_SORTED_BAM)
-#TARGETS.extend(ALL_stringtie_gtf)
-#TARGETS.extend(ALL_FASTQC) ## check later
-#TARGETS.extend(ALL_QC)
-#TARGETS.extend(ball_grown) ## 
-#TARGETS.extend(ALL_bw). ##
-
-
+TARGETS.extend( expand("02_barcode_info/{sample}_raw_barcode_count.txt", sample = SAMPLES))
+# TARGETS.extend( expand("03_corrected/{sample}_corrected_L001_R1_001.fastq", sample = SAMPLES))
+TARGETS.extend( expand("04_count/{sample}/output.bus", sample = SAMPLES))
 localrules: all
 # localrules will let the rule run locally rather than submitting to cluster
 # computing nodes, this is for very small jobs
@@ -47,144 +27,99 @@ rule all:
 	input: TARGETS
 
 
-rule trim_fastqs: 
+rule polyT_selection: # only keep the read2 with polyT structure
 	input:
 		r1 = lambda wildcards: FILES[wildcards.sample]['R1'],
 		r2 = lambda wildcards: FILES[wildcards.sample]['R2']
 	output:
-		("01_trim_seq/{sample}_1.fastq.gz" ), ("01_trim_seq/{sample}_2.fastq.gz")
-	log: "00_log/{sample}_trim_adapter.log"
+		"01_polyA_seq/{sample}_1.fastq.gz" ,
+		"01_polyA_seq/{sample}_2.fastq.gz",
+		"01_polyA_seq/{sample}_withoutPolyT_1.fastq.gz",
+		"01_polyA_seq/{sample}_withoutPolyT_2.fastq.gz", "00_log/{sample}_polyA_fre_cutadapt.log"
 	params:
 		jobname = "{sample}"
-	threads : 18
+	threads : 12
 	# group: "mygroup"
 	message: "trim fastqs {input}: {threads} threads"
-	shell:
+	shell: # -g 5' regular polyT 10 length required in second reads 
 		"""
-		cutadapt -j {threads}  -m 30  -n 6 -O 8 \
-        -a A{{20}} -A A{{20}}   -g T{{20}} -G T{{20}} \
-         -a CTGTCTCTTA -A CTGTCTCTTA  \
-          -g AGTACATGGG  -a CCCATGTACT  \
-          -G  AGTACATGGG -A CCCATGTACT  \
-           -o {output[0]} -p {output[1]}  {input[0]} {input[1]}  2> {log} 
-		"""
-#         
-rule fastqc:
-	input:  "01_trim_seq/{sample}_1.fastq.gz" , "01_trim_seq/{sample}_2.fastq.gz"
-	output: "02_fqc/{sample}_1_fastqc.zip" 
-	log:    "00_log/{sample}_fastqc"
-	# group: "mygroup"
-	params : jobname = "{sample}"
-	message: "fastqc {input}: {threads}"
-	shell:
-	    """
-	    module load fastqc
-	    fastqc -o 02_fqc -f fastq --noextract {input}  2> {log}
-	    """
-
-
-
-rule hisat_mapping:
-	input: 
-		"01_trim_seq/{sample}_1.fastq.gz", 
-		"01_trim_seq/{sample}_2.fastq.gz"
-	output: temp("03_bam/{sample}_Aligned.out.sam")
-	log: "00_log/{sample}_hisat_align"
-	params: 
-		jobname = "{sample}"
-	threads: 18
-	# group: "mygroup"
-	message: "aligning {input} using hisat: {threads} threads"
-	shell:
-		"""
-		{hisat} -p {threads} \
-		--dta \
-		-x {STARINDEX} \
-		-1 {input[0]} \
-		-2 {input[1]} \
-		-S {output} \
-		&> {log}
-		"""
-		#--rna-strandness R ## for stand strandness
-		#with the genome_tran no need for the slicesite
-		#--known-splicesite-infile {splicesite_index} \
-
-
-rule sortBam:
-	input: "03_bam/{sample}_Aligned.out.sam"
-	output: "04_sortBam/{sample}.sorted.bam"
-	log: "00_log/{sample}_sortbam.log"
-	params:
-		jobname = "{sample}"
-	threads: 12
-	# group: "mygroup"
-	message: "sorting {input} : {threads} threads"
-	shell:
-		"""
-		module load samtools
-		samtools sort  -@ {threads} -T {output}.tmp -o {output} {input} 2> {log}
+		cutadapt  -Z -j {threads}    \
+        -G T{{10}}  --action none \
+           -o {output[0]} -p {output[1]} \
+           --untrimmed-output {output[2]} --untrimmed-paired-output {output[3]} \
+            {input[0]} {input[1]}  > {output[4]} 
 		"""
 
-rule index_bam:
-    input:  "04_sortBam/{sample}.sorted.bam"
-    output: "04_sortBam/{sample}.sorted.bam.bai"
-    log:    "00_log/{sample}.index_bam"
-    threads: 1
-    params: jobname = "{sample}"
-    message: "index_bam {input}: {threads} threads"
+rule extract_barcode_umi: # trim_reads make it compariable with kallisto pipeline, keep barcode and umi in reads2, and genomic in read1
+    input:
+        r1 = "01_polyA_seq/{sample}_1.fastq.gz" ,
+        r2 = "01_polyA_seq/{sample}_2.fastq.gz"
+    output: 
+        r1 = ("01_polyA_trimmed/{sample}_index_L001_R1_001.fastq"),
+        r2 = ("01_polyA_trimmed/{sample}_index_L001_R2_001.fastq")
+    script:
+        "script/raw_fq_update_scRNA.py"
+
+
+rule barcode_QC: ## examine the barcode , first 18 bp of R2 reads
+    input: "01_polyA_trimmed/{sample}_index_L001_R2_001.fastq"  ## contain the umi
+    output: "02_barcode_info/{sample}_raw_barcode_count.txt"
     shell:
         """
-        module load samtools
-        samtools index {input} 2> {log}
+         awk  '{{if(NR%4==2) print substr($0,1,18)}}' {input} | sort | uniq -c | sort -nr   > {output} 
         """
 
+rule find_right_barcodes: ## update the barcode
+    input: "02_barcode_info/{sample}_raw_barcode_count.txt"
+    output: sum = "02_barcode_info/{sample}.barcode_final_summary",
+            map = "02_barcode_info/{sample}.barcode_final_map",
+            log = "00_log/{sample}.barcode_log",
+    script:
+        "script/barcode_hash_RNA.py"
 
 
-rule make_bigwigs: ## included if need the coverage depth 
-	input : "04_sortBam/{sample}.sorted.bam", "04_sortBam/{sample}.sorted.bam.bai"
-	# output: "07_bigwig/{sample}_forward.bw", "07_bigwig/{sample}_reverse.bw"
-	output: "06_bigwig/{sample}.bw"
-	log: "00_log/{sample}.makebw"
-	threads: 10
-	params: jobname = "{sample}"
-	message: "making bigwig for {input} : {threads} threads"
-	shell:
-		"""
-	# no window smoothing is done, for paired-end, bamCoverage will extend the length to the fragement length of the paired reads
-	bamCoverage -b {input[0]}  --binSize 100 --effectiveGenomeSize 2913022398 --skipNonCoveredRegions --normalizeUsing CPM -p {threads}  -o {output[0]} 2> {log}
-		"""
-
-## for the strand specifc coverage
-# --effectiveGenomeSize 2864785220 for GRCh37
-	# 		# no window smoothing is done, for paired-end, bamCoverage will extend the length to the fragement length of the paired reads
-	# bamCoverage -b {input[0]}  --skipNonCoveredRegions --normalizeUsing RPKM --samFlagExclude 16  -p {threads}  -o {output[0]} 2> {log}
-	# bamCoverage -b {input[0]}  --skipNonCoveredRegions --normalizeUsing RPKM --samFlagInclude 16  -p {threads}  -o {output[1]} 2>> {log}
-
-rule featureCount_fq:
-    input: "04_sortBam/{sample}.sorted.bam"
-    output: "07_featurecount/{sample}_featureCount.txt"
-    log: "00log/{sample}_featureCount.log"
-    params:
-        jobname = "{sample}"
-    threads: 12
-    message: "feature-count {input} : {threads} threads"
-    shell:
-        """
-        # -p for paried-end, counting fragments rather reads
-        featureCounts -T {threads} -p -t exon -g gene_id -a {gtf}  -M -o {output} {input} 2> {log}
-        """
-
-
-rule multiQC:
+rule read2_barcode_correction:
     input :
-        expand("00_log/{sample}_hisat_align", sample = SAMPLES),
-        expand("02_fqc/{sample}_1_fastqc.zip", sample = SAMPLES)
-    output: "07_multiQC/multiQC_log.html"
-    log: "00_log/multiqc.log"
-    message: "multiqc for all logs"
+        r1 = "01_polyA_trimmed/{sample}_index_L001_R1_001.fastq",
+        r2 = "01_polyA_trimmed/{sample}_index_L001_R2_001.fastq",
+        map = "02_barcode_info/{sample}.barcode_final_map"
+    output :
+        r1 = "03_corrected/{sample}_corrected_L001_R1_001.fastq",
+        r2 = "03_corrected/{sample}_corrected_L001_R2_001.fastq",
+        log = "00_log/{sample}.R2_reads_correction_log"
+    script:
+        "script/fq_barcode_correction.py"
+
+rule r1_zip:
+    input  : "03_corrected/{sample}_corrected_L001_R1_001.fastq"
+    output : "03_corrected/{sample}_corrected_L001_R1_001.fastq.gz"
+    threads: 11
+    shell:
+        "pigz -p {threads} {input}"
+
+rule r2_zip:
+    input  : "03_corrected/{sample}_corrected_L001_R2_001.fastq"
+    output : "03_corrected/{sample}_corrected_L001_R2_001.fastq.gz"
+    threads: 11
+    shell:
+        "pigz -p {threads} {input}"
+
+rule scRNA_count:  ## use the R1 and corrected R2 reads.
+    input:
+        r2 = "03_corrected/{sample}_corrected_L001_R2_001.fastq.gz",
+        r1 = "03_corrected/{sample}_corrected_L001_R1_001.fastq.gz"
+    output: directory("04_count/{sample}"), "04_count/{sample}/output.bus"
+    threads: 11
+    message: "kallisto {input.r1}: {threads} threads"
+    log:
+         "00_log/{sample}.kallisto"
     shell:
         """
-        multiqc 02_fqc 00_log -o 07_multiQC -d -f -v -n multiQC_log 2> {log}
+        kallisto bus  -t {threads} -n -i {kallisto_INDEX}  \
+        -x 0,0,18:0,18,30:1,0,0 \
+        -o {output[0]} \
+        {input[r2]}  {input[r1]}   > {log} 2>&1
         """
 
-
+ # kallisto bus -i /datacommons/ydiaolab/genome_ref/kallisto_index/homo_sapiens_mRNA/transcriptome.idx -n \
+ # -x 0,0,18:0,18,30:1,0,0 -o test RNA_1_sci_HiCAR_200925_corrected_L001_R2_001.fastq.gz RNA_1_sci_HiCAR_200925_corrected_L001_R1_001.fastq.gz

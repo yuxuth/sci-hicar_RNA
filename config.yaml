@@ -1,21 +1,23 @@
 
-## the index folder for STAR, change to mm9 if it is mouse
-STARINDEX: "/home/yx157/data/Index/grch38_tran/genome_tran"
-## gtf file for annotation
+# gcb hg38
+# BWA_INDEX: ~/data/Index/hg38_BWA_index/hg38.fa
+# frag_path: ~/data/Index/hg38_BWA_index/hg38_cviqi.bed
+# chromsizes : ~/data/Index/hg38_BWA_index/hg38.chrom.sizes
 
-MYGTF: "~/data/Index/grch38_tran/Homo_sapiens.GRCh38.84.gtf.gz"
-## hisat location
-hisat: "hisat2"
-stringtie : "stringtie"
-# splicesite_index : "/work/06032/tg853315/stampede2/genome_index/hisat2_human/grch38_tran/Homo_sapiens.GRCh38.95.splice_site.txt"
+# dcc hg38
+# BWA_INDEX: /datacommons/ydiaolab/genome_ref/hg38_BWA_index/hg38.fa
+# chromsizes : /datacommons/ydiaolab/genome_ref/hg38_BWA_index/hg38.chrom.sizes
+# genome: hg38
+# genome: mm10
 
-# bbbuk: '/work/06032/tg853315/stampede2/software/bbmap/bbduk.sh'
-# adaptors: '/work/06032/tg853315/stampede2/software/bbmap/resources/adapters.fa'
-## use which program to count 
 
-NGmerge: 'NGmerge'
+kallisto_INDEX: /datacommons/ydiaolab/genome_ref/kallisto_index/homo_sapiens_mRNA/transcriptome.idx
+chromsizes : /datacommons/ydiaolab/genome_ref/mm10/mm10.sorted.chrom.sizes
+genome: mm10
+white_list: sciHCAR_RNA_18_bp_whitelist.txt.gz
 
-# Path to a JSON file with samples and their corresponding FASTQ files.
+cool_bin: 10000
+
 SAMPLES_JSON: './samples.json'
 
-#CLUSTER_JSON: './cluster.json'
+CLUSTER_JSON: './cluster.json'
